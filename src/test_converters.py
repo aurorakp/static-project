@@ -1,7 +1,6 @@
 import unittest
-from converters import extract_markdown_images, extract_markdown_links, text_node_to_html_node, split_node_delimiter, split_nodes_delimiter, split_nodes_image, split_nodes_link, text_to_textnodes
+from converters import extract_markdown_images, extract_markdown_links, markdown_to_blocks, text_node_to_html_node, split_node_delimiter, split_nodes_delimiter, split_nodes_image, split_nodes_link, text_to_textnodes
 from textnode import TextNode, TextType
-from leafnode import LeafNode
 
 
 class TestConverters(unittest.TestCase):
@@ -47,7 +46,7 @@ class TestConverters(unittest.TestCase):
     def test_text_node_to_html_node_invalid_type(self):
         with self.assertRaisesRegex(ValueError, 'invalid text type'):
             node = TextNode("nope", "NOPE")
-            html_node = text_node_to_html_node(node)
+            text_node_to_html_node(node)
 
     def test_split_node_delimiter_code(self):
         node = TextNode("This is text with a `code block` word", TextType.NORMAL)
@@ -151,4 +150,77 @@ class TestConverters(unittest.TestCase):
                 TextNode(" and a ", TextType.NORMAL),
                 TextNode("link", TextType.LINK, "https://boot.dev"),
             ]
+        )
+
+    def test_markdown_to_blocks_empty_string(self):
+        self.assertEqual(markdown_to_blocks(""), [])
+
+    def test_markdown_to_blocks_empty_newlines(self):
+        self.assertEqual(markdown_to_blocks("\n\n\n\n"), [])
+
+    def test_markdown_to_blocks_beginning_newlines(self):
+        md = """
+
+
+
+            This is **bolded** paragraph
+
+            This is another paragraph with _italic_ text and `code` here
+            This is the same paragraph on a new line
+
+            - This is a list
+            - with items
+            """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_markdown_to_blocks_ending_newlines(self):
+        md = """
+            This is **bolded** paragraph
+
+            This is another paragraph with _italic_ text and `code` here
+            This is the same paragraph on a new line
+
+            - This is a list
+            - with items
+
+
+
+            """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+
+    def test_markdown_to_blocks(self):
+        md = """
+            This is **bolded** paragraph
+
+            This is another paragraph with _italic_ text and `code` here
+            This is the same paragraph on a new line
+
+            - This is a list
+            - with items
+            """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
         )

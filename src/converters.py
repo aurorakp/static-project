@@ -26,6 +26,7 @@ def text_node_to_html_node(text_node):
         case _:
             raise ValueError('invalid text type')
 
+
 def split_node_delimiter(node, delimiter, text_type, url=None):
     new_nodes = []
     if node.text.count(delimiter) % 2 != 0:
@@ -127,8 +128,34 @@ def split_nodes_link(old_nodes):
             
     return new_nodes
 
-
 def text_to_textnodes(text):
     text_node = TextNode(text, TextType.NORMAL)
     return split_nodes_delimiter(split_nodes_delimiter(split_nodes_delimiter(split_nodes_link(split_nodes_image([text_node])), '`', TextType.CODE, ), '_', TextType.ITALIC), '**', TextType.BOLD)
             
+def markdown_to_blocks(markdown):
+    raw_blocks = markdown.lstrip('"""').rstrip('"""').lstrip("'''").rstrip("'''").split('\n')
+    merged_blocks = []
+    current_paragraph = []
+
+    for i in range(len(raw_blocks)):
+        if raw_blocks[i] == '' or raw_blocks[i].lstrip().rstrip() == '':
+            if len(current_paragraph) == 0:
+                continue
+            elif len(current_paragraph) == 1:
+                merged_blocks.append(current_paragraph[0])
+                current_paragraph = []
+            else:
+                paragraph_block = '\n'.join(current_paragraph).rstrip('\n')
+                merged_blocks.append(paragraph_block)
+                current_paragraph = []
+        else:
+            current_paragraph.append(raw_blocks[i].lstrip().rstrip())
+
+    if len(current_paragraph) == 1:
+        merged_blocks.append(current_paragraph[0])
+
+    if len(current_paragraph) > 1:
+        paragraph_block = '\n'.join(current_paragraph).rstrip('\n')
+        merged_blocks.append(paragraph_block)
+    
+    return merged_blocks
