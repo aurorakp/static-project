@@ -136,16 +136,19 @@ def generate_page(from_path, template_path, dest_path, basepath):
                         )
     markdown_node = markdown_to_html_node(markdown)
     html_string = markdown_node.to_html()
+    print(f'html_string: {html_string}')
     title = extract_title(markdown)
+    template = template.replace('href="', 'href="' + basepath.rstrip('/'))
     formatted_template = template.replace('{{ Title }}', title).replace('{{ Content }}', html_string)
-    basepathed_template = formatted_template.replace('href="/', 'href="' + basepath)
-    basepathed_template = basepathed_template.replace('src="/', 'src="' + basepath)
+    print(f'formatted template: {formatted_template}')
+    formatted_template = formatted_template.replace('href=/', 'href=' + basepath)
+    formatted_template = formatted_template.replace('src=/', 'src=' + basepath)
 
     dest_file = Path(dest_path)
     dest_file.parent.mkdir(exist_ok=True, parents=True)
     try:
         with open(dest_path, 'w+') as f:
-            f.write(basepathed_template)
+            f.write(formatted_template)
     except Exception as e:
         raise Exception(f'Error while trying to write {dest_path}: {str(e)}')
 

@@ -57,106 +57,82 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type, url=None):
     return new_nodes        
                                   
 def extract_markdown_images(text):
-    matches = re.findall(r'!\[(.*?)\]\((.*?)\)', text)
+    matches = re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
     return matches
 
 def extract_markdown_links(text):
-    matches = re.findall(r'\[(.*?)\]\((.*?)\)', text)
+    matches = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
     return matches
 
 def split_nodes_image(old_nodes):
     new_nodes = []
-    for node in old_nodes:
-        if node.text_type != TextType.NORMAL:
-            new_nodes.append(node)
-        else:
-            matches = re.finditer(r'!\[(.*?)\]\((.*?)\)', node.text)
-            match_indexes = []
-
-            for m in matches:
-                match_indexes.append([m.start(), m.end()])
-
-            if len(match_indexes) == 0:
-                new_nodes.append(node)
-            else:
-                if match_indexes[0][0] != 0:
-                    new_nodes.append(TextNode(node.text[0:match_indexes[0][0]], TextType.NORMAL))
-
-                for i in range(len(match_indexes)):
-                    index_pair = match_indexes[i]
-                    image_text, image_url = extract_markdown_images(node.text[index_pair[0]:index_pair[1]+1])[0]
-                    new_nodes.append(TextNode(image_text, TextType.IMAGE, image_url))
-
-                    if i != len(match_indexes) - 1:
-                        if index_pair[1] < match_indexes[i+1][0] - 1:
-                            new_nodes.append(TextNode(node.text[index_pair[1]:match_indexes[i+1][0]], TextType.NORMAL))
-                    elif i == len(match_indexes) - 1:
-                        if index_pair[1] != len(node.text):
-                            new_nodes.append(TextNode(node.text[index_pair[1]:], TextType.NORMAL))
-                
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.NORMAL:
+            new_nodes.append(old_node)
+            continue
+        original_text = old_node.text
+        images = extract_markdown_images(original_text)
+        if len(images) == 0:
+            new_nodes.append(old_node)
+            continue
+        for image in images:
+            sections = original_text.split(f"![{image[0]}]({image[1]})", 1)
+            if len(sections) != 2:
+                raise ValueError("invalid markdown, image section not closed")
+            if sections[0] != "":
+                new_nodes.append(TextNode(sections[0], TextType.NORMAL))
+            new_nodes.append(
+                TextNode(
+                    image[0],
+                    TextType.IMAGE,
+                    image[1],
+                )
+            )
+            original_text = sections[1]
+        if original_text != "":
+            new_nodes.append(TextNode(original_text, TextType.NORMAL))
     return new_nodes
+
 
 def split_nodes_link(old_nodes):
     new_nodes = []
-    for node in old_nodes:
-        if node.text_type != TextType.NORMAL:
-            new_nodes.append(node)
-        else:
-            matches = re.finditer(r'\[(.*?)\]\((.*?)\)', node.text)
-            match_indexes = []
-
-            for m in matches:
-                match_indexes.append([m.start(), m.end()])
-
-            if len(match_indexes) == 0:
-                new_nodes.append(node)
-            else:
-                if match_indexes[0][0] != 0:
-                    new_nodes.append(TextNode(node.text[0:match_indexes[0][0]], TextType.NORMAL))           
-
-                for i in range(len(match_indexes)):
-                    index_pair = match_indexes[i]
-                    link_text, link_url = extract_markdown_links(node.text[index_pair[0]:index_pair[1]+1])[0]
-                    new_nodes.append(TextNode(link_text, TextType.LINK, link_url))
-
-                    if i != len(match_indexes) - 1:
-                        if index_pair[1] < match_indexes[i+1][0] - 1:
-                            new_nodes.append(TextNode(node.text[index_pair[1]:match_indexes[i+1][0]], TextType.NORMAL))
-                    elif i == len(match_indexes) - 1:
-                        if index_pair[1] != len(node.text):
-                            new_nodes.append(TextNode(node.text[index_pair[1]+1:], TextType.NORMAL))
-            
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.NORMAL:
+            new_nodes.append(old_node)
+            continue
+        original_text = old_node.text
+        links = extract_markdown_links(original_text)
+        if len(links) == 0:
+            new_nodes.append(old_node)
+            continue
+        for link in links:
+            sections = original_text.split(f"[{link[0]}]({link[1]})", 1)
+            if len(sections) != 2:
+                raise ValueError("invalid markdown, link section not closed")
+            if sections[0] != "":
+                new_nodes.append(TextNode(sections[0], TextType.NORMAL))
+            new_nodes.append(TextNode(link[0], TextType.LINK, link[1]))
+            original_text = sections[1]
+        if original_text != "":
+            new_nodes.append(TextNode(original_text, TextType.NORMAL))
     return new_nodes
 
 def text_to_textnodes(text):
-    text_node = TextNode(text, TextType.NORMAL)
-    return split_nodes_delimiter(split_nodes_delimiter(split_nodes_delimiter(split_nodes_link(split_nodes_image([text_node])), '`', TextType.CODE, ), '_', TextType.ITALIC), '**', TextType.BOLD)
+    nodes = [TextNode(text, TextType.NORMAL)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+    return nodes
             
 def markdown_to_blocks(markdown):
-    raw_blocks = markdown.lstrip('"""').rstrip('"""').lstrip("'''").rstrip("'''").split('\n')
-    merged_blocks = []
-    current_paragraph = []
-
-    for i in range(len(raw_blocks)):
-        if raw_blocks[i] == '' or raw_blocks[i].lstrip().rstrip() == '':
-            if len(current_paragraph) == 0:
-                continue
-            elif len(current_paragraph) == 1:
-                merged_blocks.append(current_paragraph[0])
-                current_paragraph = []
-            else:
-                paragraph_block = '\n'.join(current_paragraph).rstrip('\n')
-                merged_blocks.append(paragraph_block)
-                current_paragraph = []
-        else:
-            current_paragraph.append(raw_blocks[i].lstrip().rstrip())
-
-    if len(current_paragraph) == 1:
-        merged_blocks.append(current_paragraph[0])
-
-    if len(current_paragraph) > 1:
-        paragraph_block = '\n'.join(current_paragraph).rstrip('\n')
-        merged_blocks.append(paragraph_block)
-    
-    return merged_blocks
+    blocks = markdown.split("\n\n")
+    filtered_blocks = []
+    for block in blocks:
+        if block == "":
+            continue
+        block = block.strip()
+        filtered_blocks.append(block)
+    return filtered_blocks
 
