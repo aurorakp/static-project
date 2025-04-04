@@ -134,10 +134,13 @@ def generate_page(from_path, template_path, dest_path, basepath):
     except Exception as e:
         raise Exception(f'Error while trying to parse {template_path}: {str(e)}'
                         )
-    html_string = markdown_to_html_node(markdown).to_html()
+    markdown_node = markdown_to_html_node(markdown)
+    html_string = markdown_node.to_html()
     title = extract_title(markdown)
     formatted_template = template.replace('{{ Title }}', title).replace('{{ Content }}', html_string)
-    basepathed_template = formatted_template.replace('href="/', 'href="' + basepath).replace('src="/', 'src="' + basepath)
+    basepathed_template = formatted_template.replace('href="/', 'href="' + basepath)
+    basepathed_template = basepathed_template.replace('src="/', 'src="' + basepath)
+
     dest_file = Path(dest_path)
     dest_file.parent.mkdir(exist_ok=True, parents=True)
     try:
