@@ -138,7 +138,7 @@ def generate_page(from_path, template_path, dest_path, BASEPATH):
     html_string = markdown_to_html_node(markdown).to_html()
     title = extract_title(markdown)
     formatted_template = template.replace('{{ Title }}', title).replace('{{ Content }}', html_string)
-    basepathed_template = formatted_template.replace('href="/', f'href="{BASEPATH}').replace('src="/', f'src="{BASEPATH}')
+    basepathed_template = formatted_template.replace('href="/', f'href="{BASEPATH}/').replace('src="/', f'src="{BASEPATH}/')
     dest_file = Path(dest_path)
     dest_file.parent.mkdir(exist_ok=True, parents=True)
     try:
