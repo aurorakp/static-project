@@ -15,7 +15,7 @@ def main():
     basepath = '/'
     if len(sys.argv) > 1:
         basepath = sys.argv[1]
-
+    print(f'basepath is: {basepath}')
     if os.path.exists(public_path):
         shutil.rmtree(public_path)
 
