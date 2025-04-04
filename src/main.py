@@ -1,7 +1,8 @@
+import os
+import shutil
 import sys
 
 from full_page_converters import generate_pages_recursive
-from utils import copy_and_overwrite_dir
 
 static_path = "./static"
 public_path = "./docs"
@@ -15,7 +16,11 @@ def main():
     if len(sys.argv) > 1:
         basepath = sys.argv[1]
 
-    copy_and_overwrite_dir(static_path, public_path)
+    if os.path.exists(public_path):
+        shutil.rmtree(public_path)
+
+    shutil.copytree(static_path, public_path)
+
     generate_pages_recursive(content_path, template_path, public_path, basepath)
     
 
