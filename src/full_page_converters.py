@@ -1,3 +1,5 @@
+from pathlib import Path
+import os
 from textnode import TextNode, TextType
 from parentnode import ParentNode
 from blocks import BlockType, block_to_block_type
@@ -97,3 +99,61 @@ def extract_html_children_from_code(block):
     code_text_node = text_node_to_html_node(TextNode(text=code_block, text_type=TextType.NORMAL))
     code_node = ParentNode(tag="code", children=[code_text_node])
     return ParentNode(tag='pre', children=[code_node])
+
+def extract_title(markdown):
+    blocks = markdown_to_blocks(markdown)
+    header_line = None
+    for block in blocks:
+        lines = block.split('\n')
+        print(f'lines: {lines}')
+    
+        for line in lines:
+            if line.startswith('# '):
+                header_line = line
+                break
+    if header_line is None:
+        raise ValueError('No title line!')
+    return header_line.lstrip('# ').rstrip()
+
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    if not os.path.exists(from_path):
+        raise ValueError("'from_path' directory does not exist'")
+    if not os.path.exists(template_path):
+        raise ValueError("'template_path' file does not exist")
+    markdown = None
+    template = None
+    try:
+        with open(from_path, 'r')as f:
+            markdown = f.read()
+    except Exception as e:
+        raise Exception(f'Error while trying to parse {from_path}: {str(e)}'
+                        )
+    try:
+        with open(template_path, 'r') as f:
+            template = f.read()
+    except Exception as e:
+        raise Exception(f'Error while trying to parse {template_path}: {str(e)}'
+                        )
+    html_string = markdown_to_html_node(markdown).to_html()
+    title = extract_title(markdown)
+    formatted_template = template.replace('{{ Title }}', title).replace('{{ Content }}', html_string)
+    dest_file = Path(dest_path)
+    dest_file.parent.mkdir(exist_ok=True, parents=True)
+    try:
+        with open(dest_path, 'w+') as f:
+            f.write(formatted_template)
+    except Exception as e:
+        raise Exception(f'Error while trying to write {dest_path}: {str(e)}')
+
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    md_globs = Path(dir_path_content).glob('**/*.md')
+    for md_path in md_globs:
+        print(f'md path absolute: {md_path.absolute()}')
+        md_path_absolute = md_path.absolute()
+        print(f'dir path content: {dir_path_content}')
+        print(f'dest dir path: {dest_dir_path}')
+        dest_path = str(md_path_absolute).replace(dir_path_content, dest_dir_path).replace('.md', '.html')
+        print(f'dest path: {dest_path}')
+        generate_page(md_path_absolute, os.path.abspath('template.html'), dest_path)

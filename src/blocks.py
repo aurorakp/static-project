@@ -13,7 +13,7 @@ def block_to_block_type(block):
     if re.match('#{1,6}\s.+', block) is not None:
         return BlockType.HEADING
 
-    if re.match('`.+`', block, re.DOTALL) is not None:
+    if block[0:2] == '```' and block[-3:] == '```':
         return BlockType.CODE
 
     block_lines = block.split('\n')

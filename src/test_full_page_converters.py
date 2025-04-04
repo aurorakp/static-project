@@ -1,6 +1,6 @@
 import unittest
 
-from full_page_converters import markdown_to_html_node
+from full_page_converters import markdown_to_html_node, extract_title
  
 
 class FullPageConverterTests(unittest.TestCase):
@@ -105,3 +105,17 @@ class FullPageConverterTests(unittest.TestCase):
             html,
             "<div><blockquote>This is a blockquote block</blockquote><p>this is paragraph text</p></div>",
         )
+
+    def test_extract_title(self):
+        md = """
+        # This is the Title! 
+        """
+        result = extract_title(md)
+        self.assertEqual(result, "This is the Title!")
+
+    def test_extract_title_invalid(self):
+        md = """
+        ## This is not a title
+        """
+        with self.assertRaisesRegex(ValueError, "No title line!"):
+            extract_title(md)

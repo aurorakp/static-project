@@ -1,8 +1,12 @@
-from textnode import TextNode, TextType
+from utils import copy_and_overwrite_dir
+from full_page_converters import generate_pages_recursive
+import os
 
 def main():
-    node = TextNode('This is some anchor text', TextType.NORMAL, 'https://www.boot.dev')
-    print(node)
+    copy_and_overwrite_dir(os.path.abspath('static'), os.path.abspath('public'))
+    generate_pages_recursive(os.path.abspath('content'), os.path.abspath('template.html'), os.path.abspath('public'))
+
+
 
 if __name__ == "__main__":
     main()

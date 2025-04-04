@@ -159,3 +159,4 @@ def markdown_to_blocks(markdown):
         merged_blocks.append(paragraph_block)
     
     return merged_blocks
+
