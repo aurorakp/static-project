@@ -115,7 +115,7 @@ def extract_title(markdown):
         raise ValueError('No title line!')
     return header_line.lstrip('# ').rstrip()
 
-def generate_page(from_path, template_path, dest_path, basepath):
+def generate_page(from_path, template_path, dest_path, BASEPATH):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     if not os.path.exists(from_path):
         raise ValueError("'from_path' directory does not exist'")
@@ -138,7 +138,7 @@ def generate_page(from_path, template_path, dest_path, basepath):
     html_string = markdown_to_html_node(markdown).to_html()
     title = extract_title(markdown)
     formatted_template = template.replace('{{ Title }}', title).replace('{{ Content }}', html_string)
-    basepathed_template = formatted_template.replace('href="/', 'href="{BASEPATH}').replace('src="/', 'src="{BASEPATH}')
+    basepathed_template = formatted_template.replace('href="/', f'href="{BASEPATH}').replace('src="/', f'src="{BASEPATH}')
     dest_file = Path(dest_path)
     dest_file.parent.mkdir(exist_ok=True, parents=True)
     try:
@@ -148,9 +148,9 @@ def generate_page(from_path, template_path, dest_path, basepath):
         raise Exception(f'Error while trying to write {dest_path}: {str(e)}')
 
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, BASEPATH):
     md_globs = Path(dir_path_content).glob('**/*.md')
     for md_path in md_globs:
         md_path_absolute = md_path.absolute()
         dest_path = str(md_path_absolute).replace(dir_path_content, dest_dir_path).replace('.md', '.html')
-        generate_page(md_path_absolute, os.path.abspath('template.html'), dest_path, basepath)
+        generate_page(md_path_absolute, os.path.abspath('template.html'), dest_path, BASEPATH)
