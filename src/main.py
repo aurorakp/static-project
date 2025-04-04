@@ -15,8 +15,7 @@ def main():
     basepath = '/'
     if len(sys.argv) > 1:
         basepath = sys.argv[1]
-    import logging
-    logging.debug('basepath is: %s', basepath)
+    print('basepath is: %s', basepath)
     if os.path.exists(public_path):
         shutil.rmtree(public_path)
 
